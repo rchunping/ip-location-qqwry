@@ -9,15 +9,21 @@ Golang做的ip城市查询服务，采用纯真数据库qqwry.dat
 ----
 
 ~~~~
-git clone https://github.com/rchunping/ip2location-qqwry.git
-cd ip2location-qqwry
-go build
+mkdir -p ~/mygo/src
+export GOPATH=$HOME/mygo/src
+cd ~/mygo/src
+go get github.com/rchunping/ip2location-qqwry
 ~~~~
+
+一切顺利的话就会生成可执行文件 ~/mygo/bin/ip2location-qqwry
+
+如果遇到问题，请看下面：
+
 
 
 因为纯真数据是GBK编码的，这里自带了go-iconv转成UTF-8 ( https://github.com/ChaimHong/go-iconv  )
 
-这个要cgo编译，如果编译失败，请自修修改 go-iconv/iconv.go 里面的
+这个要cgo编译，如果编译失败，请自己修改 go-iconv/iconv.go 里面的
 
 ~~~~
 // #cgo CFLAGS: -I/usr/local/include
