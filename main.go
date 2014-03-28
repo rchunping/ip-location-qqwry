@@ -1,22 +1,20 @@
-package main
-
 /*
  QQWry.dat里面全部采用了little-endian字节序
  文件结构说明：
  http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
 */
 
+package main
+
 import (
-	//"github.com/shanemhansen/gogeo"
-
-	"net"
-	"net/http"
-
 	"encoding/binary"
 	"encoding/json"
-	//"fmt"
-	"github.com/ChaimHong/go-iconv" //iconv
+	"flag"
+	"fmt"
+	"github.com/rchunping/ip2location-qqwry/go-iconv" //iconv
 	"log"
+	"net"
+	"net/http"
 	//"net/url"
 	"os"
 	"strings"
@@ -48,11 +46,49 @@ func (this *tIp2LocationService) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	//auto detect...
 	if ipStr == "" {
-		ipStr = r.Header.Get("X-Gate-Real-IP")
+		ipStr = r.Header.Get("X-Real-IP") // nginx
 	}
 
 	if ipStr == "" {
-		_ra := r.RemoteAddr
+		ipStr = r.Header.Get("X-Forwarded-For") // proxy
+
+		// 保留ip
+		// A类:10.0.0.0-10.255.255.255
+		// B类:172.16.0.0-172.31.255.255
+		// C类:192.168.0.0-192.168.255.255
+
+		// 可能经过多个代理，结构是这样的 ip1,ip2,...
+		if strings.Index(ipStr, ",") > -1 {
+			for _, _ip := range strings.Split(ipStr, ",") {
+				_ip = strings.Trim(_ip, " ")
+				if strings.Index(_ip, "10.") == 0 || strings.Index(_ip, "192.168.") == 0 {
+					continue
+				}
+				_skip := false
+				for bi := 16; bi <= 32; bi++ {
+					if strings.Index(_ip, fmt.Sprintf("172.%d.", bi)) == 0 {
+						_skip = true
+						break
+					}
+				}
+
+				if _skip {
+					continue
+				}
+
+				// valid ip
+				ipStr = _ip
+				break
+			}
+		}
+	}
+
+	if ipStr == "" {
+		ipStr = r.Header.Get("Client-Ip") // ??
+	}
+
+	if ipStr == "" {
+		_ra := r.RemoteAddr // IP:port
 
 		_ras := strings.Split(_ra, ":")
 		ipStr = _ras[0]
@@ -83,11 +119,10 @@ func (this *tIp2LocationService) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	//var addr net.IPAddr
 	//addr.IP = ip.To4() // := &net.IPAddr{IP:ip}
 	//log.Printf("%#v",addr)
-	//return
-	//record := this.db.RecordByIPAddr(&addr)
 
 	//log.Printf("%#v",record)
 	//return
+
 	log.Printf("ip:%s country:%s area:%s", ipStr, record.country, record.area)
 
 	ret := map[string]interface{}{
@@ -108,8 +143,8 @@ func (this *tIp2LocationService) ServeHTTP(w http.ResponseWriter, r *http.Reques
 type tIp2LocationServiceJSONP struct {
 }
 
-//分装成JSONP
-//如果没有callback参数，则还是json输出
+// 封装成JSONP
+// 如果没有callback参数，则还是json输出
 func (srv *tIp2LocationServiceJSONP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cb := r.FormValue("callback")
@@ -147,7 +182,7 @@ func startQueryService(dbfile string) {
 	file, err := os.Open(dbfile)
 
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	buf := make([]byte, 32)
@@ -167,7 +202,7 @@ func startQueryService(dbfile string) {
 		req, eor := <-queryPool
 
 		if !eor {
-			panic("empty query queue.")
+			log.Fatal("empty query.")
 		}
 
 		//log.Printf("%#v",req)
@@ -237,7 +272,7 @@ func startQueryService(dbfile string) {
 
 		}
 
-		log.Printf("GOT: %#v POS: %d", got, rpos)
+		//log.Printf("GOT: %#v POS: %d", got, rpos)
 
 		loc := tIp2LocationResp{
 			ok:      false,
@@ -254,7 +289,7 @@ func startQueryService(dbfile string) {
 			cd, err := iconv.Open("UTF-8//IGNORE", "GBK")
 			if err != nil {
 
-				// 不报错，直接返回false
+				// 编码问题，不报错，直接返回false
 				//panic("iconv.Open failed!")
 
 				recodePool <- loc
@@ -276,7 +311,7 @@ func startQueryService(dbfile string) {
 
 		}
 
-		log.Printf("LOC: %#v", loc)
+		//log.Printf("LOC: %#v", loc)
 
 		recodePool <- loc
 
@@ -292,7 +327,7 @@ func getIpLocation(file *os.File, offset int64) (loc tIp2LocationResp) {
 
 	mod := buf[0]
 
-	log.Printf("C1 FLAG: %#v", mod)
+	//log.Printf("C1 FLAG: %#v", mod)
 
 	countryOffset := int64(0)
 	areaOffset := int64(0)
@@ -305,7 +340,7 @@ func getIpLocation(file *os.File, offset int64) (loc tIp2LocationResp) {
 
 		mod2 := buf[0]
 
-		log.Printf("C2 FLAG: %#v", mod2)
+		//log.Printf("C2 FLAG: %#v", mod2)
 
 		if 0x02 == mod2 {
 			loc.country = _readString(file, _readLong3(file, countryOffset+1))
@@ -342,7 +377,7 @@ func _readArea(file *os.File, offset int64) string {
 
 	mod := buf[0]
 
-	log.Printf("A FLAG: %#v", mod)
+	//log.Printf("A FLAG: %#v", mod)
 
 	if 0x01 == mod || 0x02 == mod {
 		areaOffset := _readLong3(file, offset+1)
@@ -380,24 +415,21 @@ func _readString(file *os.File, offset int64) string {
 }
 
 func main() {
-	dbfile := os.Getenv("DB_FILE")
-	if dbfile == "" {
-		dbfile = "./qqwry.dat"
-	}
+
+	var dbfile, bindaddr *string
+	dbfile = flag.String("f", "qqwry.dat", "database file")
+	bindaddr = flag.String("b", "0.0.0.0:45356", "listen port")
+
+	flag.Parse()
 
 	queryPool = make(chan tIp2LocationReq, queryLength)
 	recodePool = make(chan tIp2LocationResp, queryLength)
 
 	//启动查询进程
-	go startQueryService(dbfile)
-
-	bindaddr := os.Getenv("BIND_ADDR")
-	if bindaddr == "" {
-		bindaddr = "0.0.0.0:45356"
-	}
+	go startQueryService(*dbfile)
 
 	srv := tIp2LocationServiceJSONP{}
 	http.Handle("/", &srv)
-	http.ListenAndServe(bindaddr, nil)
+	http.ListenAndServe(*bindaddr, nil)
 
 }
