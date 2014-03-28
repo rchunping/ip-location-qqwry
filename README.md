@@ -127,4 +127,10 @@ Nginx配置
 国外数据不太准，需要另外的解决方案（购买完整版GeoIP或者免费缩水版）
 
 
+资源
+----
+
+纯真IP数据格式分析： http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
+
+
 
