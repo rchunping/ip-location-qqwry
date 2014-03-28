@@ -9,9 +9,8 @@ Golang做的ip城市查询服务，采用纯真数据库qqwry.dat
 ----
 
 ~~~~
-mkdir -p ~/mygo/src
-export GOPATH=$HOME/mygo/src
-cd ~/mygo/src
+mkdir ~/mygo
+export GOPATH=$HOME/mygo
 go get github.com/rchunping/ip2location-qqwry
 ~~~~
 
@@ -23,7 +22,9 @@ go get github.com/rchunping/ip2location-qqwry
 
 因为纯真数据是GBK编码的，这里自带了go-iconv转成UTF-8 ( https://github.com/ChaimHong/go-iconv  )
 
-这个要cgo编译，如果编译失败，请自己修改 go-iconv/iconv.go 里面的
+请确保你的系统安装了libiconv (看看有没有iconv.h文件)
+
+go-conv要cgo编译，如果编译失败，请自己修改 go-iconv/iconv.go 里面的
 
 ~~~~
 // #cgo CFLAGS: -I/usr/local/include
@@ -32,7 +33,7 @@ go get github.com/rchunping/ip2location-qqwry
 // #include <errno.h>
 ~~~~
 
-基本上只需要调整CFLAGS和LDFLAGS
+基本上只需要调整CFLAGS和LDFLAGS 里面的路径
 
 
 使用
