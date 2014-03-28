@@ -24,7 +24,7 @@ go get github.com/rchunping/ip2location-qqwry
 
 请确保你的系统安装了libiconv (看看有没有iconv.h文件)
 
-go-conv要cgo编译，如果编译失败，请自己修改 go-iconv/iconv.go 里面的
+go-iconv要cgo编译，如果编译失败，请自己修改 go-iconv/iconv.go 里面的
 
 ~~~~
 // #cgo CFLAGS: -I/usr/local/include
@@ -137,7 +137,11 @@ Nginx配置
 资源
 ----
 
-纯真IP数据格式分析： http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
+1. 纯真IP数据格式分析： http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
 
-
+2. 纯真IP最新数据库下载： http://update.cz88.net/soft/setup.zip (首页: http://www.cz88.net/ ) 
+  
+   2.1 安装后在安装目录可以找到 qqwry.dat
+  
+   2.2 安装后可以定期更新数据库，更新后还是去安装目录找 qqwry.data
 
