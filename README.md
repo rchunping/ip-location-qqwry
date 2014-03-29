@@ -16,24 +16,7 @@ go get github.com/rchunping/ip2location-qqwry
 
 一切顺利的话就会生成可执行文件 ~/mygo/bin/ip2location-qqwry
 
-如果遇到问题，请看下面：
-
-
-
-因为纯真数据是GBK编码的，这里自带了go-iconv转成UTF-8 ( https://github.com/ChaimHong/go-iconv  )
-
-请确保你的系统安装了libiconv (看看有没有iconv.h文件)
-
-go-iconv要cgo编译，如果编译失败，请自己修改 go-iconv/iconv.go 里面的
-
-~~~~
-// #cgo CFLAGS: -I/usr/local/include
-// #cgo LDFLAGS: -liconv -L/usr/local/lib
-// #include <iconv.h>
-// #include <errno.h>
-~~~~
-
-基本上只需要调整CFLAGS和LDFLAGS 里面的路径
+==== 更新： 已经移除go-iconv代码，使用go.text/encoding做GBK/UTF-8转换 ，不需要libiconv库了 ====
 
 
 使用
