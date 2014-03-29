@@ -7,15 +7,18 @@
 package main
 
 import (
+	zh "code.google.com/p/go.text/encoding/simplifiedchinese"
+	"code.google.com/p/go.text/transform"
 	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/rchunping/ip2location-qqwry/go-iconv" //iconv
+	//"github.com/rchunping/ip2location-qqwry/go-iconv" //iconv
 	"log"
 	"net"
 	"net/http"
 	//"net/url"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -286,26 +289,39 @@ func startQueryService(dbfile string) {
 			//log.Printf("C: %#v",[]byte(_loc.country))
 			//log.Printf("A: %#v",[]byte(_loc.area))
 
-			cd, err := iconv.Open("UTF-8//IGNORE", "GBK")
-			if err != nil {
+			// //cd, err := iconv.Open("UTF-8//IGNORE", "GBK")
+			// if err != nil {
 
-				// 编码问题，不报错，直接返回false
-				//panic("iconv.Open failed!")
+			// 	// 编码问题，不报错，直接返回false
+			// 	//panic("iconv.Open failed!")
 
-				recodePool <- loc
+			// 	recodePool <- loc
 
-				continue
+			// 	continue
 
-			}
+			// }
 
-			defer cd.Close()
+			// defer cd.Close()
 
 			//xx,ex := cd.ConvString(_loc.country)
 
 			//log.Printf("ICONV: %#v %#v",xx,ex)
 
-			loc.country = cd.ConvString(_loc.country)
-			loc.area = cd.ConvString(_loc.area)
+			// loc.country = cd.ConvString(_loc.country)
+			// loc.area = cd.ConvString(_loc.area)
+
+			var tr *transform.Reader
+			tr = transform.NewReader(strings.NewReader(_loc.country), zh.GBK.NewDecoder())
+
+			if s, err := ioutil.ReadAll(tr); err == nil {
+				loc.country = string(s)
+			}
+
+			tr = transform.NewReader(strings.NewReader(_loc.area), zh.GBK.NewDecoder())
+
+			if s, err := ioutil.ReadAll(tr); err == nil {
+				loc.area = string(s)
+			}
 
 			loc.ok = _loc.ok
 
