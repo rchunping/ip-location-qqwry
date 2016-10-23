@@ -14,12 +14,13 @@ Update
 ----
 
 ~~~~
-mkdir ~/mygo
-export GOPATH=$HOME/mygo
-go get github.com/rchunping/ip2location-qqwry
+mkdir ~/ipquery &&  cd ipquery
+export GOPATH=`pwd` && go get github.com/rchunping/ip2location-qqwry
+export GOPATH=`pwd` && go get golang.org/x/text/encoding/simplifiedchinese
+make
 ~~~~
 
-一切顺利的话就会生成可执行文件 ~/mygo/bin/ip2location-qqwry
+一切顺利的话就会生成可执行文件 ipquery 
 
 ==== 更新： 已经移除go-iconv代码，使用go.text/encoding做GBK/UTF-8转换 ，不需要libiconv库了 ====
 
@@ -28,9 +29,9 @@ go get github.com/rchunping/ip2location-qqwry
 ----
 
 ~~~~
-./ip2location-qqwry -h
+./ipquery -h
 
-Usage of ./ip2location-qqwry:
+Usage of ./ipquery :
   -b="0.0.0.0:45356": listen port
   -f="qqwry.dat": database file
 ~~~~
@@ -39,7 +40,7 @@ Usage of ./ip2location-qqwry:
 源码中已经自带一个纯真ip数据库，大概是2014-03-20的版本
 
 ~~~~
-./ip2location-qqwry -b ":45356" -f ./qqwry.dat
+./ipquery -b ":45356" -f ./qqwry.dat
 ~~~~
 
 

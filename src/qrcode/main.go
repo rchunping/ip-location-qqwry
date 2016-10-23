@@ -7,8 +7,8 @@ http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
 package main
 
 import (
-	zh "code.google.com/p/go.text/encoding/simplifiedchinese"
-	"code.google.com/p/go.text/transform"
+	zh "golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 	"encoding/binary"
 	"encoding/json"
 	"flag"
