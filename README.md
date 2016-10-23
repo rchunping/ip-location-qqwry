@@ -4,6 +4,11 @@ ip2location-qqwry
 Golang做的ip城市查询服务，采用纯真数据库qqwry.dat
 
 
+Update
+---
+2016.10.23 已改成内存查询，感谢hetao29
+
+
 
 编译
 ----
