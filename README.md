@@ -29,9 +29,9 @@ make
 ----
 
 ~~~~
-./ip2location-qqwry -h
+./ipquery -h
 
-Usage of ./ip2location-qqwry:
+Usage of ./ipquery :
   -b="0.0.0.0:45356": listen port
   -f="qqwry.dat": database file
 ~~~~
@@ -40,7 +40,7 @@ Usage of ./ip2location-qqwry:
 源码中已经自带一个纯真ip数据库，大概是2014-03-20的版本
 
 ~~~~
-./ip2location-qqwry -b ":45356" -f ./qqwry.dat
+./ipquery -b ":45356" -f ./qqwry.dat
 ~~~~
 
 
