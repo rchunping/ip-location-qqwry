@@ -1,7 +1,7 @@
 /*
- QQWry.dat里面全部采用了little-endian字节序
- 文件结构说明：
- http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
+QQWry.dat里面全部采用了little-endian字节序
+文件结构说明：
+http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
 */
 
 package main
@@ -12,14 +12,19 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"flag"
+	"regexp"
 	"fmt"
 	//"github.com/rchunping/ip2location-qqwry/go-iconv" //iconv
 	"log"
+	"bytes"
 	"net"
 	"net/http"
 	//"net/url"
 	"io/ioutil"
+	"lib/daemon"
 	"os"
+	"os/exec"
+	"path"
 	"strings"
 	"sync"
 )
@@ -34,8 +39,10 @@ type tIp2LocationReq struct {
 type tIp2LocationResp struct {
 	ok      bool
 	ip      string
-	country string
-	area    string
+	area_name 	string
+	area_desc 		string
+	op_name 	string
+	op_desc    string
 }
 
 var queryLength = 2
@@ -126,13 +133,15 @@ func (this *tIp2LocationService) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	//log.Printf("%#v",record)
 	//return
 
-	log.Printf("ip:%s country:%s area:%s", ipStr, record.country, record.area)
+	log.Printf("ip:%s area_desc:%s area_name:%s op_desc:%s op_name:%s", ipStr, record.area_desc,record.area_name, record.op_desc,record.op_name)
 
 	ret := map[string]interface{}{
 		"ok":      record.ok,
 		"ip":      ipStr,
-		"country": record.country,
-		"area":    record.area,
+		"area_name":    record.area_name,
+		"area_desc": record.area_desc,
+		"op_name":    record.op_name,
+		"op_desc":    record.op_desc,
 	}
 
 	js, _ := json.Marshal(ret)
@@ -182,13 +191,16 @@ func (srv *tIp2LocationServiceJSONP) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 func startQueryService(dbfile string) {
 
-	file, err := os.Open(dbfile)
+	_file, err := os.Open(dbfile)
 
 	if err != nil {
 		log.Fatal(err)
 	}
+	fileInfo, _ :=_file.Stat();
 
-	buf := make([]byte, 32)
+	buf := make([]byte, fileInfo.Size())
+	_file.Read(buf);
+	file:=bytes.NewReader(buf);
 
 	// header
 	file.ReadAt(buf[0:8], 0)
@@ -280,14 +292,14 @@ func startQueryService(dbfile string) {
 		loc := tIp2LocationResp{
 			ok:      false,
 			ip:      req.ip,
-			country: "",
-			area:    "",
+			area_name:    "",
+			area_desc: "",
+			op_desc:    "",
+			op_name:    "",
 		}
 		if got {
 			_loc := getIpLocation(file, rpos)
 
-			//log.Printf("C: %#v",[]byte(_loc.country))
-			//log.Printf("A: %#v",[]byte(_loc.area))
 
 			// //cd, err := iconv.Open("UTF-8//IGNORE", "GBK")
 			// if err != nil {
@@ -303,27 +315,30 @@ func startQueryService(dbfile string) {
 
 			// defer cd.Close()
 
-			//xx,ex := cd.ConvString(_loc.country)
 
 			//log.Printf("ICONV: %#v %#v",xx,ex)
 
-			// loc.country = cd.ConvString(_loc.country)
-			// loc.area = cd.ConvString(_loc.area)
 
 			var tr *transform.Reader
-			tr = transform.NewReader(strings.NewReader(_loc.country), zh.GBK.NewDecoder())
+			tr = transform.NewReader(strings.NewReader(_loc.area_desc), zh.GBK.NewDecoder())
 
 			if s, err := ioutil.ReadAll(tr); err == nil {
-				loc.country = string(s)
+				loc.area_desc = string(s)
 			}
 
-			tr = transform.NewReader(strings.NewReader(_loc.area), zh.GBK.NewDecoder())
+			tr = transform.NewReader(strings.NewReader(_loc.op_desc), zh.GBK.NewDecoder())
 
 			if s, err := ioutil.ReadAll(tr); err == nil {
-				loc.area = string(s)
+				loc.op_desc = string(s)
 			}
 
 			loc.ok = _loc.ok
+			//{{{
+			re := regexp.MustCompile("(铁通|电信|联通|移动|网通)")
+			loc.op_name = re.FindString(loc.op_desc);
+			re_area := regexp.MustCompile("(北京|天津|河北|山西|内蒙|辽宁|吉林|黑龙|上海|江苏|浙江|安徽|福建|江西|山东|河南|湖北|湖南|广东|广西|海南|重庆|四川|贵州|云南|西藏|陕西|甘肃|青海|宁夏|新疆|香港|澳门|台湾)")
+			loc.area_name= re_area.FindString(loc.area_desc);
+			//}}}
 
 		}
 
@@ -335,7 +350,7 @@ func startQueryService(dbfile string) {
 
 }
 
-func getIpLocation(file *os.File, offset int64) (loc tIp2LocationResp) {
+func getIpLocation(file *bytes.Reader, offset int64) (loc tIp2LocationResp) {
 
 	buf := make([]byte, 1024)
 
@@ -345,48 +360,48 @@ func getIpLocation(file *os.File, offset int64) (loc tIp2LocationResp) {
 
 	//log.Printf("C1 FLAG: %#v", mod)
 
-	countryOffset := int64(0)
-	areaOffset := int64(0)
+	descOffset := int64(0)
+	op_descOffset := int64(0)
 
 	if 0x01 == mod {
-		countryOffset = _readLong3(file, offset+5)
-		//log.Printf("Redirect to: %#v",countryOffset);
+		descOffset = _readLong3(file, offset+5)
+		//log.Printf("Redirect to: %#v",descOffset);
 
-		file.ReadAt(buf[0:1], countryOffset)
+		file.ReadAt(buf[0:1], descOffset)
 
 		mod2 := buf[0]
 
 		//log.Printf("C2 FLAG: %#v", mod2)
 
 		if 0x02 == mod2 {
-			loc.country = _readString(file, _readLong3(file, countryOffset+1))
-			areaOffset = countryOffset + 4
+			loc.area_desc = _readString(file, _readLong3(file, descOffset+1))
+			op_descOffset = descOffset + 4
 		} else {
-			loc.country = _readString(file, countryOffset)
-			areaOffset = countryOffset + int64(len(loc.country)) + 1
-			// areaOffset = file.Seek(0,1) // got the pos
-			// log.Printf("cPOS: %#v aPOS: %#v err: %#v",countryOffset,areaOffset,err3)
+			loc.area_desc = _readString(file, descOffset)
+			op_descOffset = descOffset + int64(len(loc.area_desc)) + 1
+			// op_descOffset = file.Seek(0,1) // got the pos
+			// log.Printf("cPOS: %#v aPOS: %#v err: %#v",descOffset,op_descOffset,err3)
 
 		}
 
-		loc.area = _readArea(file, areaOffset)
+		loc.op_desc = _readArea(file, op_descOffset)
 
 	} else if 0x02 == mod {
-		loc.country = _readString(file, _readLong3(file, offset+5))
-		loc.area = _readArea(file, offset+8)
+		loc.area_desc = _readString(file, _readLong3(file, offset+5))
+		loc.op_desc = _readArea(file, offset+8)
 	} else {
-		loc.country = _readString(file, offset+4)
-		areaOffset = offset + 4 + int64(len(loc.country)) + 1
-		//areaOffset,_ = file.Seek(0,1)
+		loc.area_desc = _readString(file, offset+4)
+		op_descOffset = offset + 4 + int64(len(loc.area_desc)) + 1
+		//op_descOffset,_ = file.Seek(0,1)
 
-		loc.area = _readArea(file, areaOffset)
+		loc.op_desc = _readArea(file, op_descOffset)
 	}
 
 	loc.ok = true
 
 	return
 }
-func _readArea(file *os.File, offset int64) string {
+func _readArea(file *bytes.Reader, offset int64) string {
 	buf := make([]byte, 4)
 
 	file.ReadAt(buf[0:1], offset)
@@ -396,17 +411,17 @@ func _readArea(file *os.File, offset int64) string {
 	//log.Printf("A FLAG: %#v", mod)
 
 	if 0x01 == mod || 0x02 == mod {
-		areaOffset := _readLong3(file, offset+1)
-		if areaOffset == 0 {
+		op_descOffset := _readLong3(file, offset+1)
+		if op_descOffset == 0 {
 			return ""
 		} else {
-			return _readString(file, areaOffset)
+			return _readString(file, op_descOffset)
 		}
 	}
 	return _readString(file, offset)
 }
 
-func _readLong3(file *os.File, offset int64) int64 {
+func _readLong3(file *bytes.Reader, offset int64) int64 {
 	buf := make([]byte, 4)
 	file.ReadAt(buf, offset)
 	buf[3] = 0x00
@@ -414,7 +429,7 @@ func _readLong3(file *os.File, offset int64) int64 {
 	return int64(binary.LittleEndian.Uint32(buf))
 }
 
-func _readString(file *os.File, offset int64) string {
+func _readString(file *bytes.Reader, offset int64) string {
 
 	buf := make([]byte, 1024)
 	got := int64(0)
@@ -433,19 +448,36 @@ func _readString(file *os.File, offset int64) string {
 func main() {
 
 	var dbfile, bindaddr *string
-	dbfile = flag.String("f", "qqwry.dat", "database file")
-	bindaddr = flag.String("b", "0.0.0.0:45356", "listen port")
-
+	var filename bytes.Buffer
+	dbfile = flag.String("f", "", "database file")
+	bindaddr = flag.String("b", "0.0.0.0:9002", "listen port")
 	flag.Parse()
-
-	queryPool = make(chan tIp2LocationReq, queryLength)
-	recodePool = make(chan tIp2LocationResp, queryLength)
+	if(len(*dbfile)==0){
+		_file, _ := exec.LookPath(os.Args[0])
+		_pwd,_ := path.Split(_file)
+		os.Chdir(_pwd)
+		pwd, _ := os.Getwd()
+		queryPool = make(chan tIp2LocationReq, queryLength)
+		recodePool = make(chan tIp2LocationResp, queryLength)
+		filename.WriteString(pwd);
+		filename.WriteString("/");
+		filename.WriteString("qqwry.dat");
+	}else{
+		filename.WriteString(*dbfile);
+	}
+	log.Println("Load Data File:%v",filename.String());
+	lib.Daemon(0, 1)
 
 	//启动查询进程
-	go startQueryService(*dbfile)
+	go startQueryService(filename.String())
 
 	srv := tIp2LocationServiceJSONP{}
 	http.Handle("/", &srv)
-	http.ListenAndServe(*bindaddr, nil)
+	err := http.ListenAndServe(*bindaddr, nil)
+	if err != nil {
+		log.Println("Error:");
+		log.Println(err)
+		log.Fatal("Exit!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	}
 
 }
