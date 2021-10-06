@@ -10,13 +10,19 @@ Update
 
 
 
+Docker & Swarm/Composer
+----
+
+~~~~
+docker pull hetao29/ipquery
+~~~~
+
 编译
 ----
 
 ~~~~
 mkdir ~/ipquery &&  cd ipquery
-export GOPATH=`pwd` && go get github.com/rchunping/ip2location-qqwry
-export GOPATH=`pwd` && go get golang.org/x/text/encoding/simplifiedchinese
+export GOPROXY=https://goproxy.cn && go build -o bin/ipquery
 make
 ~~~~
 
