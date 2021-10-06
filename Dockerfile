@@ -4,8 +4,7 @@ LABEL version="1.0"
 
 WORKDIR /data/ipquery/
 
-COPY . .
-
+COPY . .  
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
 	&& apk update && apk add git tree \
 	&& tree -L 3 
@@ -19,7 +18,7 @@ WORKDIR /data/ipquery/
 
 RUN mkdir bin/
 
-COPY qqwry.dat  /data/ipquery/
+COPY qqwry.dat  /data/ipquery/bin/
 COPY --from=0 /data/ipquery/bin/ipquery bin/
 
 HEALTHCHECK --interval=5s --timeout=5s --retries=3 \
