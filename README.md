@@ -1,7 +1,7 @@
 ip-location-qqwry
 =================
 
-Golang做的ip城市查询服务，采用纯真数据库qqwry.dat
+Golang做的ip城市查询服务，采用纯真数据库[qqwry.dat](https://github.com/wisdomfusion/qqwry.dat)
 
 
 Update
@@ -11,13 +11,19 @@ Update
 2018.02.02 原名称"ip2location"因商标问题，项目改名为"ip-location-qqwry"
 
 
+Docker & Swarm/Composer
+----
+
+~~~~
+docker pull hetao29/ipquery
+~~~~
+
 编译
 ----
 
 ~~~~
 mkdir ~/ipquery &&  cd ipquery
-export GOPATH=`pwd` && go get github.com/rchunping/ip2location-qqwry
-export GOPATH=`pwd` && go get golang.org/x/text/encoding/simplifiedchinese
+export GOPROXY=https://goproxy.cn && go build -o bin/ipquery
 make
 ~~~~
 
@@ -124,7 +130,7 @@ Nginx配置
 国外数据不太准，需要另外的解决方案（购买完整版GeoIP或者免费缩水版）
 
 
-资源
+资源（废弃）
 ----
 
 1. 纯真IP数据格式分析： http://lumaqq.linuxsir.org/article/qqwry_format_detail.html
