@@ -7,12 +7,12 @@
 package main
 
 import (
-	zh "code.google.com/p/go.text/encoding/simplifiedchinese"
-	"code.google.com/p/go.text/transform"
 	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
+	zh "golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 	//"github.com/rchunping/ip2location-qqwry/go-iconv" //iconv
 	"log"
 	"net"
