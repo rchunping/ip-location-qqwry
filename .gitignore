@@ -21,3 +21,4 @@ _testmain.go
 
 *.exe
 ip2location-qqwry
+bin/ip-location-qqwry
