@@ -15,19 +15,19 @@ Docker & Swarm/Composer
 ----
 
 ~~~~
-docker pull hetao29/ipquery
+docker pull hetao29/ip-location-qqwry
 ~~~~
 
 编译
 ----
 
 ~~~~
-mkdir ~/ipquery &&  cd ipquery
-export GOPROXY=https://goproxy.cn && go build -o bin/ipquery
+mkdir ~/ip-location-qqwry &&  cd ip-location-qqwry
+export GOPROXY=https://goproxy.cn && go build -o bin/ip-location-qqwry
 make
 ~~~~
 
-一切顺利的话就会生成可执行文件 ipquery 
+一切顺利的话就会生成可执行文件 ip-location-qqwry 
 
 ==== 更新： 已经移除go-iconv代码，使用go.text/encoding做GBK/UTF-8转换 ，不需要libiconv库了 ====
 
@@ -36,9 +36,9 @@ make
 ----
 
 ~~~~
-./ipquery -h
+./ip-location-qqwry -h
 
-Usage of ./ipquery :
+Usage of ./ip-location-qqwry :
   -b="0.0.0.0:45356": listen port
   -f="qqwry.dat": database file
 ~~~~
@@ -47,7 +47,7 @@ Usage of ./ipquery :
 源码中已经自带一个纯真ip数据库，大概是2014-03-20的版本
 
 ~~~~
-./ipquery -b ":45356" -f ./qqwry.dat
+./ip-location-qqwry -b ":45356" -f ./qqwry.dat
 ~~~~
 
 
